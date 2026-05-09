@@ -1,94 +1,74 @@
+import { useState,listOptions } from "react";
+
+import Header from "./components/Header";
+import SelectField from "./components/SelectField";
+import InputField from "./components/InputField";
+import PrimaryButton from "./components/PrimaryButton";
+import CardPreview from "./components/CardPreview";
+
 import {
-  ChevronLeft,
-  User,
-  ChevronDown,
-} from "lucide-react";
+  repeatOptions,
+  durationOptions,
+  positionOptions,
+} from "./data/options";
 
 function App() {
+
+  const [repeat, setRepeat] = useState("Weekly");
+
+  const [duration, setDuration] = useState("2 Weeks");
+
+  const [position, setPosition] = useState("Top");
+
+  const [list, setList] = useState("To Do");
+
   return (
-    <div className="w-full min-h-screen bg-[#1D2125] flex items-center justify-center p-4">
-      <div className="w-[320px] rounded-2xl bg-[#282E33] shadow-2xl border border-[#3B444C] p-4 text-white">
+    <div className="min-h-screen bg-[#1D2125] flex items-center justify-center p-4">
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <button className="text-gray-400 hover:text-white">
-            <ChevronLeft size={18} />
-          </button>
+      <div className="w-[340px] animate-[popup_0.25s_ease] bg-[#282E33] border border-[#3B444C] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.6)] p-4 text-white">
 
-          <h1 className="text-sm font-semibold">
-            Auto Clone
-          </h1>
+        <Header />
+        <CardPreview />
+        <SelectField
+          label="Repeat"
+          value={repeat}
+          options={repeatOptions}
+          onChange={setRepeat}
+        />
 
-          <button className="text-gray-400 hover:text-white">
-            <User size={18} />
-          </button>
-        </div>
+        <InputField
+          label="Time"
+          type="time"
+        />
 
-        {/* Repeat */}
-        <div className="mb-4">
-          <label className="text-xs text-gray-400 mb-1 block">
-            Repeat
-          </label>
+        <InputField
+          label="Date"
+          type="date"
+        />
 
-          <button className="w-full bg-[#22272B] border border-[#3B444C] rounded-lg px-3 py-2 flex items-center justify-between text-sm">
-            Weekly
-            <ChevronDown size={16} />
-          </button>
-        </div>
+        <SelectField
+          label="Duration"
+          value={duration}
+          options={durationOptions}
+          onChange={setDuration}
+        />
 
-        {/* Time */}
-        <div className="mb-4">
-          <label className="text-xs text-gray-400 mb-1 block">
-            Time
-          </label>
+        <SelectField
+          label="Position"
+          value={position}
+          options={positionOptions}
+          onChange={setPosition}
+        />
+        <SelectField
+          label="Target List"
+          value={list}
+          options={listOptions}
+          onChange={setList}
+        />
+        <PrimaryButton loading={false} />
 
-          <input
-            type="time"
-            className="w-full bg-[#22272B] border border-[#3B444C] rounded-lg px-3 py-2 text-sm outline-none"
-          />
-        </div>
-
-        {/* Date */}
-        <div className="mb-4">
-          <label className="text-xs text-gray-400 mb-1 block">
-            Date
-          </label>
-
-          <input
-            type="date"
-            className="w-full bg-[#22272B] border border-[#3B444C] rounded-lg px-3 py-2 text-sm outline-none"
-          />
-        </div>
-
-        {/* Duration */}
-        <div className="mb-4">
-          <label className="text-xs text-gray-400 mb-1 block">
-            Duration
-          </label>
-
-          <button className="w-full bg-[#22272B] border border-[#3B444C] rounded-lg px-3 py-2 flex items-center justify-between text-sm">
-            2 Weeks
-            <ChevronDown size={16} />
-          </button>
-        </div>
-
-        {/* Position */}
-        <div className="mb-5">
-          <label className="text-xs text-gray-400 mb-1 block">
-            Position
-          </label>
-
-          <button className="w-full bg-[#22272B] border border-[#3B444C] rounded-lg px-3 py-2 flex items-center justify-between text-sm">
-            Top
-            <ChevronDown size={16} />
-          </button>
-        </div>
-
-        {/* Save */}
-        <button className="w-full bg-[#579DFF] hover:bg-[#85B8FF] text-black font-medium py-2 rounded-lg transition-all">
-          Save
-        </button>
       </div>
+
     </div>
   );
 }
