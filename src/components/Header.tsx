@@ -1,10 +1,15 @@
 import { ChevronLeft, User } from "lucide-react";
 
 function Header() {
+  const t = window.TrelloPowerUp.iframe();
+
   return (
     <div className="flex items-center justify-between mb-4 px-0">
 
-      <button className="text-[#9FADBC] hover:text-white transition border-none outline-none bg-transparent cursor-pointer p-0">
+      <button
+        onClick={() => t.closePopup()}
+        className="text-[#9FADBC] hover:text-white transition border-none outline-none bg-transparent cursor-pointer p-0"
+      >
         <ChevronLeft size={20} />
       </button>
 

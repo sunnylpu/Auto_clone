@@ -15,9 +15,9 @@ window.TrelloPowerUp.initialize({
         text: "Auto Clone",
         callback: function (t: any) {
           return t.popup({
-            title: "Auto Clone",
+            title: " ",
             url: window.location.origin,
-            height: 540,
+            height: 480,
           });
         },
       },
@@ -30,9 +30,9 @@ window.TrelloPowerUp.initialize({
         text: "Auto Clone",
         callback: function (t: any) {
           return t.popup({
-            title: "Auto Clone",
+            title: " ",
             url: window.location.origin,
-            height: 540,
+            height: 480,
           });
         },
       },
@@ -46,9 +46,9 @@ window.TrelloPowerUp.initialize({
         text: "Auto Clone",
         callback: function (t: any) {
           return t.popup({
-            title: "Auto Clone",
+            title: " ",
             url: window.location.origin,
-            height: 540,
+            height: 480,
           });
         },
       },
