@@ -58,6 +58,7 @@ function App() {
   const [rules, setRules] = useState<CloneRule[]>([]);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => { let a = 0; const id = setInterval(() => { a++; try { const c = window.TrelloPowerUp?.iframe?.(); if (c) { setT(c); clearInterval(id); } } catch {} if (a >= 30) clearInterval(id); }, 120); return () => clearInterval(id); }, []);
   useEffect(() => { if (!t?.render || !t?.sizeTo) return; try { t.render(() => t.sizeTo("#root").catch(() => {})); } catch {} }, [t]);
@@ -71,8 +72,8 @@ function App() {
       try {
         // Read context from URL query param (most reliable), then t.arg, then infer
         const urlCtx = new URLSearchParams(window.location.search).get("ctx");
-        const ctxArg = await t.arg("context").catch(() => null);
-        const pf = (await t.arg("prefetch").catch(() => null)) ?? {};
+        const ctxArg = typeof t.arg === "function" ? await t.arg("context").catch(() => null) : null;
+        const pf = (typeof t.arg === "function" ? await t.arg("prefetch").catch(() => null) : null) ?? {};
         const sp = (await t.get("board", "shared", "autoClonePrefetch").catch(() => null)) ?? {};
 
         let mem = pf.member ?? sp.member ?? null;
@@ -92,7 +93,12 @@ function App() {
         } else if (curList?.id && curList?.name) {
           context = "list";
         }
-        if (!cancelled) setCtx(context);
+        
+        const debugStr = `u:${urlCtx || 'N'} a:${ctxArg || 'N'} c:${curCard?.id ? 'Y' : 'N'}`;
+        if (!cancelled) {
+          setCtx(context);
+          setDebugInfo(debugStr);
+        }
 
         // Fallback fetches
         if (!mem || !Array.isArray(bLists) || !Array.isArray(bCards)) {
@@ -206,7 +212,7 @@ function App() {
           <button type="button" onClick={() => { setView(view === "rules" ? "form" : "rules"); setCardMenuOpen(false); }} className="h-7 px-2 rounded-[6px] border border-[#3B444C] bg-[#22272B] hover:bg-[#2C333A] transition flex items-center gap-1 text-[11px] text-[#9FADBC]">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
             {rules.filter((r) => r.active).length || 0}
-            <span className="ml-1 px-1 py-0.5 rounded-[4px] bg-[#579DFF]/20 text-[#579DFF] text-[9px] font-bold">v3:{ctx}</span>
+            <span className="ml-1 px-1 py-0.5 rounded-[4px] bg-[#579DFF]/20 text-[#579DFF] text-[9px] font-bold" title={debugInfo}>v4:{ctx} {debugInfo}</span>
           </button>
           <button type="button" onClick={() => { setView(view === "account" ? "form" : "account"); setCardMenuOpen(false); }} className="h-7 w-7 rounded-full border border-[#3B444C] bg-[#22272B] hover:bg-[#2C333A] transition overflow-hidden grid place-items-center" aria-label="Account">
             {member?.avatarUrl ? <img src={member.avatarUrl} alt="User" className="h-full w-full object-cover" /> : <span className="text-[12px] text-[#9FADBC]">{(member?.fullName ?? "U").trim().slice(0, 1).toUpperCase()}</span>}
