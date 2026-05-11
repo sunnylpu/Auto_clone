@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import SelectField from "./components/SelectField";
 import InputField from "./components/InputField";
@@ -11,13 +11,7 @@ import {
 } from "./data/options";
 
 function App() {
-  const t = useMemo(() => {
-    try {
-      return window.TrelloPowerUp?.iframe?.() ?? null;
-    } catch {
-      return null;
-    }
-  }, []);
+  const [t, setT] = useState<any>(null);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [member, setMember] = useState<{
@@ -33,6 +27,41 @@ function App() {
   const [position, setPosition] = useState("Top");
 
   const [list, setList] = useState("To Do");
+
+  useEffect(() => {
+    let cancelled = false;
+    let attempt = 0;
+
+    const tryGetT = () => {
+      attempt += 1;
+      try {
+        const next = window.TrelloPowerUp?.iframe?.();
+        if (next) {
+          setT(next);
+          return true;
+        }
+      } catch {
+        // ignore; Trello context not ready yet
+      }
+      return false;
+    };
+
+    // try immediately + a few retries (fixes Trello timing/race)
+    if (!tryGetT()) {
+      const id = window.setInterval(() => {
+        if (cancelled) return;
+        if (tryGetT() || attempt >= 25) window.clearInterval(id);
+      }, 120);
+      return () => {
+        cancelled = true;
+        window.clearInterval(id);
+      };
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
