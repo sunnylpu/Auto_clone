@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SelectField from "./components/SelectField";
 import { durationOptions, positionOptions, repeatOptions } from "./data/options";
 
@@ -25,8 +25,6 @@ declare global {
 function App() {
   const [t, setT] = useState<any>(null);
   const [view, setView] = useState<"form" | "account">("form");
-  const userMenuRef = useRef<HTMLDivElement | null>(null);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [member, setMember] = useState<{
     fullName?: string;
     username?: string;
@@ -82,7 +80,7 @@ function App() {
       t.sizeTo("#root").catch(() => {});
     });
     return () => window.cancelAnimationFrame(id);
-  }, [t, userMenuOpen, cardMenuOpen, view, cards.length]);
+  }, [t, cardMenuOpen, view, cards.length]);
 
   useEffect(() => {
     if (!t) return;
@@ -90,10 +88,14 @@ function App() {
 
     async function loadContextData() {
       try {
-        const prefetched = (await t.arg("prefetch")) ?? {};
-        let memberData = prefetched.member ?? null;
-        let boardLists = prefetched.lists ?? [];
-        let boardCards = prefetched.cards ?? [];
+        const prefetched = (await t.arg("prefetch").catch(() => null)) ?? {};
+        const sharedPrefetched = (await t.get("board", "shared", "autoClonePrefetch").catch(() => null)) ?? {};
+
+        let memberData = prefetched.member ?? sharedPrefetched.member ?? null;
+        let boardLists = prefetched.lists ?? sharedPrefetched.lists ?? [];
+        let boardCards = prefetched.cards ?? sharedPrefetched.cards ?? [];
+        const currentCard = prefetched.currentCard ?? sharedPrefetched.currentCard ?? null;
+        const currentList = prefetched.currentList ?? sharedPrefetched.currentList ?? null;
 
         // Fallbacks if args are missing.
         if (!memberData || !Array.isArray(boardLists) || !Array.isArray(boardCards)) {
@@ -118,10 +120,13 @@ function App() {
           id: l.id,
           name: l.name,
         }));
+        if (currentList?.id && currentList?.name && !normalizedLists.some((l: TrelloList) => l.id === currentList.id)) {
+          normalizedLists.unshift({ id: currentList.id, name: currentList.name });
+        }
         setLists(normalizedLists);
         if (normalizedLists.length > 0) setTargetListName((prev) => prev || normalizedLists[0].name);
 
-        setCards(
+        const normalizedCards = (
           (boardCards ?? [])
             .filter((c: any) => Boolean(c?.id && c?.name))
             .map((c: any) => ({
@@ -133,6 +138,17 @@ function App() {
               idLabels: c.idLabels ?? [],
             }))
         );
+        if (currentCard?.id && currentCard?.name && !normalizedCards.some((c: TrelloCard) => c.id === currentCard.id)) {
+          normalizedCards.unshift({
+            id: currentCard.id,
+            name: currentCard.name,
+            desc: currentCard.desc ?? "",
+            idList: currentCard.idList ?? normalizedLists[0]?.id ?? "",
+            idMembers: currentCard.idMembers ?? [],
+            idLabels: currentCard.idLabels ?? [],
+          });
+        }
+        setCards(normalizedCards);
       } catch {
         if (!cancelled) {
           setLists([]);
@@ -146,17 +162,6 @@ function App() {
       cancelled = true;
     };
   }, [t]);
-
-  useEffect(() => {
-    function onDocMouseDown(e: MouseEvent) {
-      const target = e.target;
-      if (!(target instanceof Node)) return;
-      if (userMenuRef.current && !userMenuRef.current.contains(target)) setUserMenuOpen(false);
-      if (cardMenuOpen) setCardMenuOpen(false);
-    }
-    document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
-  }, [cardMenuOpen]);
 
   const selectedCard = useMemo(
     () => cards.find((c) => c.id === selectedCardId) ?? null,
@@ -250,36 +255,18 @@ function App() {
           <div />
         )}
 
-        <div className="relative" ref={userMenuRef}>
-          <button
-            type="button"
-            onClick={() => setUserMenuOpen((v) => !v)}
-            className="h-7 w-7 rounded-full border border-[#3B444C] bg-[#22272B] hover:bg-[#2C333A] transition overflow-hidden grid place-items-center"
-            aria-label="User menu"
-          >
-            {member?.avatarUrl ? (
-              <img src={member.avatarUrl} alt={member.fullName ?? member.username ?? "User"} className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-[12px] text-[#9FADBC]">{(member?.fullName ?? member?.username ?? "U").trim().slice(0, 1).toUpperCase()}</span>
-            )}
-          </button>
-
-          {userMenuOpen && (
-            <div className="absolute right-0 mt-2 w-[220px] bg-[#282E33] border border-[#3B444C] rounded-[10px] shadow-2xl overflow-hidden z-50">
-              <button
-                type="button"
-                onClick={() => {
-                  setUserMenuOpen(false);
-                  setView("account");
-                }}
-                className="w-full text-left px-3 py-2 hover:bg-[#3B444C] transition"
-              >
-                <div className="text-[12px] font-semibold text-[#B6C2CF] truncate">{member?.fullName ?? "Unknown user"}</div>
-                {member?.username && <div className="text-[12px] text-[#9FADBC] truncate">@{member.username}</div>}
-              </button>
-            </div>
+        <button
+          type="button"
+          onClick={() => setView("account")}
+          className="h-7 w-7 rounded-full border border-[#3B444C] bg-[#22272B] hover:bg-[#2C333A] transition overflow-hidden grid place-items-center"
+          aria-label="Open account"
+        >
+          {member?.avatarUrl ? (
+            <img src={member.avatarUrl} alt={member.fullName ?? member.username ?? "User"} className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-[12px] text-[#9FADBC]">{(member?.fullName ?? member?.username ?? "U").trim().slice(0, 1).toUpperCase()}</span>
           )}
-        </div>
+        </button>
       </div>
 
       {view === "account" ? (
