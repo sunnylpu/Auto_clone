@@ -205,16 +205,42 @@ function App() {
     [cards, selectedCardId]
   );
 
+  const listNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const list of lists) map.set(list.id, list.name);
+    return map;
+  }, [lists]);
+
   const filteredCards = useMemo(() => {
     const q = cardQuery.trim().toLowerCase();
-    if (!q) return cards.slice(0, 20);
-    return cards.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 20);
-  }, [cards, cardQuery]);
+    if (!q) return cards.slice(0, 40);
+    return cards
+      .filter((c) => {
+        const cardName = c.name.toLowerCase();
+        const listName = (listNameById.get(c.idList) ?? "").toLowerCase();
+        return cardName.includes(q) || listName.includes(q);
+      })
+      .slice(0, 40);
+  }, [cards, cardQuery, listNameById]);
 
   const targetList = useMemo(
     () => lists.find((l) => l.name === targetListName) ?? null,
     [lists, targetListName]
   );
+
+  useEffect(() => {
+    if (!cards.length || selectedCardId) return;
+    setSelectedCardId(cards[0].id);
+    setCardQuery(cards[0].name);
+  }, [cards, selectedCardId]);
+
+  useEffect(() => {
+    if (!selectedCard) return;
+    const sourceListName = listNameById.get(selectedCard.idList);
+    if (sourceListName) {
+      setTargetListName(sourceListName);
+    }
+  }, [selectedCard, listNameById]);
 
   function getIntervalDays() {
     if (repeat === "Daily") return 1;
@@ -294,7 +320,10 @@ function App() {
 
         <button
           type="button"
-          onClick={() => setView("account")}
+          onClick={() => {
+            setView((prev) => (prev === "account" ? "form" : "account"));
+            setCardMenuOpen(false);
+          }}
           className="h-7 w-7 rounded-full border border-[#3B444C] bg-[#22272B] hover:bg-[#2C333A] transition overflow-hidden grid place-items-center"
           aria-label="Open account"
         >
@@ -355,7 +384,10 @@ function App() {
                       }}
                       className="w-full text-left px-3 py-2 text-[13px] hover:bg-[#3B444C]"
                     >
-                      {c.name}
+                      <div className="truncate text-[#B6C2CF]">{c.name}</div>
+                      <div className="text-[11px] text-[#9FADBC] truncate">
+                        {listNameById.get(c.idList) ?? "Unknown list"}
+                      </div>
                     </button>
                   ))
                 )}
