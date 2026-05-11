@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { X } from "lucide-react";
 
 import SelectField from "./components/SelectField";
 import InputField from "./components/InputField";
@@ -11,6 +12,14 @@ import {
 } from "./data/options";
 
 function App() {
+  const t = useMemo(() => window.TrelloPowerUp?.iframe?.(), []);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [member, setMember] = useState<{
+    fullName?: string;
+    username?: string;
+    avatarUrl?: string;
+  } | null>(null);
 
   const [repeat, setRepeat] = useState("Weekly");
 
@@ -20,8 +29,100 @@ function App() {
 
   const [list, setList] = useState("To Do");
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadMember() {
+      try {
+        if (!t?.member) return;
+        const m = await t.member("fullName", "username", "avatarUrl");
+        if (!cancelled) setMember(m ?? null);
+      } catch {
+        if (!cancelled) setMember(null);
+      }
+    }
+    loadMember();
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
+  useEffect(() => {
+    function onDocMouseDown(e: MouseEvent) {
+      if (!userMenuOpen) return;
+      const el = userMenuRef.current;
+      if (!el) return;
+      if (e.target instanceof Node && !el.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [userMenuOpen]);
+
   return (
     <div className="p-3 text-[#B6C2CF] w-full">
+      {/* Top bar (in-app) */}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <button
+          type="button"
+          onClick={() => t?.closePopup?.()}
+          className="h-7 w-7 ml-1 rounded-[6px] border border-[#3B444C] bg-[#22272B] hover:bg-[#2C333A] transition grid place-items-center"
+          aria-label="Close"
+          title="Close"
+        >
+          <X size={16} className="text-[#9FADBC]" />
+        </button>
+
+        <div className="relative" ref={userMenuRef}>
+          <button
+            type="button"
+            onClick={() => setUserMenuOpen((v) => !v)}
+            className="h-7 w-7 rounded-full border border-[#3B444C] bg-[#22272B] hover:bg-[#2C333A] transition overflow-hidden grid place-items-center"
+            aria-label="User menu"
+          >
+            {member?.avatarUrl ? (
+              <img
+                src={member.avatarUrl}
+                alt={member.fullName ?? member.username ?? "User"}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-[12px] text-[#9FADBC]">
+                {(member?.fullName ?? member?.username ?? "U")
+                  .trim()
+                  .slice(0, 1)
+                  .toUpperCase()}
+              </span>
+            )}
+          </button>
+
+          {userMenuOpen && (
+            <div className="absolute right-0 mt-2 w-[220px] bg-[#282E33] border border-[#3B444C] rounded-[10px] shadow-2xl overflow-hidden z-50">
+              <div className="px-3 py-2">
+                <div className="text-[12px] font-semibold text-[#B6C2CF] truncate">
+                  {member?.fullName ?? "Unknown user"}
+                </div>
+                {member?.username && (
+                  <div className="text-[12px] text-[#9FADBC] truncate">
+                    @{member.username}
+                  </div>
+                )}
+              </div>
+              <div className="h-px bg-[#3B444C]" />
+              <button
+                type="button"
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  t?.showSettings?.();
+                }}
+                className="w-full text-left px-3 py-2 text-[13px] text-[#B6C2CF] hover:bg-[#3B444C] transition"
+              >
+                Settings
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Select a Card (Search style) */}
       <div className="mb-4">
