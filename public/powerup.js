@@ -32,7 +32,7 @@ function openPopup(t, context) {
 
     return t.popup({
       title: "Auto Clone",
-      url: "/?ctx=" + context + "&v=" + Date.now(),
+      url: "./index.html?ctx=" + context + "&v=" + Date.now(),
       height: 540,
       accentColor: "#2b2c2f",
       args: {

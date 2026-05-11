@@ -206,7 +206,7 @@ function App() {
           <button type="button" onClick={() => { setView(view === "rules" ? "form" : "rules"); setCardMenuOpen(false); }} className="h-7 px-2 rounded-[6px] border border-[#3B444C] bg-[#22272B] hover:bg-[#2C333A] transition flex items-center gap-1 text-[11px] text-[#9FADBC]">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
             {rules.filter((r) => r.active).length || 0}
-            <span className="ml-1 px-1 py-0.5 rounded-[4px] bg-[#579DFF]/20 text-[#579DFF] text-[9px] font-bold">v2</span>
+            <span className="ml-1 px-1 py-0.5 rounded-[4px] bg-[#579DFF]/20 text-[#579DFF] text-[9px] font-bold">v3:{ctx}</span>
           </button>
           <button type="button" onClick={() => { setView(view === "account" ? "form" : "account"); setCardMenuOpen(false); }} className="h-7 w-7 rounded-full border border-[#3B444C] bg-[#22272B] hover:bg-[#2C333A] transition overflow-hidden grid place-items-center" aria-label="Account">
             {member?.avatarUrl ? <img src={member.avatarUrl} alt="User" className="h-full w-full object-cover" /> : <span className="text-[12px] text-[#9FADBC]">{(member?.fullName ?? "U").trim().slice(0, 1).toUpperCase()}</span>}
