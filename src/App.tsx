@@ -41,7 +41,7 @@ function App() {
   const [t, setT] = useState<any>(null);
   const [ctx, setCtx] = useState<Context>("board");
   const [view, setView] = useState<"form" | "rules" | "account" | "cardback">("form");
-  const [member, setMember] = useState<{ fullName?: string; username?: string; avatarUrl?: string } | null>(null);
+  const [member, setMember] = useState<{ fullName?: string; username?: string; avatarUrl?: string; email?: string } | null>(null);
   const [cards, setCards] = useState<TrelloCard[]>([]);
   const [lists, setLists] = useState<TrelloList[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +129,7 @@ function App() {
             if (!bid) setDebugError(prev => prev + " noBid");
             
             const [me, ls, cs] = await Promise.all([
-              api.get("members/me", { fields: "fullName,username,avatarUrl" }).catch((e: any) => { setDebugError(prev => prev + " apiMem:" + e?.message); return null; }), 
+              api.get("members/me", { fields: "email,fullName,username,avatarUrl" }).catch((e: any) => { setDebugError(prev => prev + " apiMem:" + e?.message); return null; }), 
               bid ? api.get(`boards/${bid}/lists`, { fields: "id,name", filter: "open" }).catch((e: any) => { setDebugError(prev => prev + " apiList:" + e?.message); return []; }) : [], 
               bid ? api.get(`boards/${bid}/cards`, { fields: "id,name,desc,idList,idMembers,idLabels", filter: "open" }).catch((e: any) => { setDebugError(prev => prev + " apiCard:" + e?.message); return []; }) : []
             ]);
@@ -146,7 +146,7 @@ function App() {
         }
         if (cancelled) return;
 
-        setMember({ fullName: mem?.fullName ?? mem?.name, username: mem?.username ?? mem?.membername, avatarUrl: mem?.avatarUrl ?? mem?.avatarURL });
+        setMember({ fullName: mem?.fullName ?? mem?.name, username: mem?.username ?? mem?.membername, avatarUrl: mem?.avatarUrl ?? mem?.avatarURL, email: mem?.email });
         const normLists = (bLists ?? []).map((l: any) => ({ id: l.id, name: l.name }));
         setLists(normLists);
         const normCards = (bCards ?? []).filter((c: any) => c?.id && c?.name).map((c: any) => ({ id: c.id, name: c.name, desc: c.desc ?? "", idList: c.idList, idMembers: c.idMembers ?? [], idLabels: c.idLabels ?? [] }));
@@ -233,7 +233,7 @@ function App() {
     try {
       const rule: CloneRule = { id: uid(), srcId: selectedCard.id, srcName: selectedCard.name, listId: actualTargetListId, listName, repeat, weekday, dayOfMonth: parseInt(dayOfMonth, 10), time: atTime || "09:00", pos: position, expiry: computeExpiry(expiry), active: true, lastRun: null, created: new Date().toISOString() };
       const api = await t.getRestApi(); 
-      if (!(await api.isAuthorized())) await api.authorize({ scope: "read,write", expiration: "never" });
+      if (!(await api.isAuthorized())) await api.authorize({ scope: "read,write,account", expiration: "never" });
       
       const token = await api.getToken();
       const appKey = "e533ed095b0c07ac12a6f8d2aef8a3dd";
@@ -291,11 +291,17 @@ function App() {
             <div className="h-10 w-10 rounded-full overflow-hidden border border-[#2C333A] bg-[#2C333A] grid place-items-center shrink-0">
               {member?.avatarUrl ? <img src={member.avatarUrl} alt="User" className="h-full w-full object-cover" /> : <User size={20} className="text-[#8C9BAB]" />}
             </div>
-            <div className="min-w-0">
-              <div className="text-[15px] font-medium text-white truncate">{member?.fullName ?? "Unknown"}</div>
-              <div className="text-[13px] text-[#8C9BAB] truncate">{member?.username ? `@${member.username}` : "@"}</div>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-[14px] font-medium text-[#B6C2CF] truncate">{member?.fullName ?? "User"}</span>
+              <span className="text-[12px] text-[#8C9BAB] truncate">{member?.username ? `@${member.username}` : ""}</span>
+              {member?.email && <span className="text-[11px] text-[#738496] truncate mt-0.5">{member.email}</span>}
             </div>
           </div>
+          {!member?.email && (
+            <button type="button" onClick={async () => { const api = await t.getRestApi(); await api.clearToken(); window.location.reload(); }} className="mt-3 w-full bg-[#579DFF] hover:bg-[#85B8FF] text-[#141518] text-[13px] font-medium py-2 rounded-lg transition">
+              Connect Email (Re-authorize)
+            </button>
+          )}
         </div>
       )}
 
@@ -333,7 +339,7 @@ function App() {
           <button type="button" onClick={async () => {
             try {
               const api = await t.getRestApi();
-              await api.authorize({ scope: "read,write", expiration: "never" });
+              await api.authorize({ scope: "read,write,account", expiration: "never" });
               window.location.reload();
             } catch (err: any) {
               setToast("Auth failed: " + err?.message);
