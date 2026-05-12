@@ -493,7 +493,7 @@ function App() {
 
       {view === "cardback" && (
         <div 
-          onClick={() => { if (t) t.modal({ title: 'Edit Auto Clone', url: './index.html?ctx=card&cardId=' + selectedCardId + '&edit=true', height: 450 }); }}
+          onClick={(e) => { if (t) t.popup({ mouseEvent: e.nativeEvent, title: 'Edit Auto Clone', url: './index.html?ctx=card&cardId=' + selectedCardId + '&edit=true', height: 480 }); }}
           className="flex items-center justify-between bg-[#22272b] border border-[#3B444C] rounded-lg p-3 cursor-pointer hover:bg-[#2C333A] transition"
         >
           <div>
