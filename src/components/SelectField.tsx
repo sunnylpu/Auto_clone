@@ -1,10 +1,15 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
+interface OptionObj {
+  id: string;
+  name: string;
+}
+
 interface Props {
   label: string;
   value: string;
-  options: string[];
+  options: (string | OptionObj)[];
   onChange: (value: string) => void;
   className?: string;
 }
@@ -22,7 +27,7 @@ function SelectField({
   return (
     <div className={`relative ${className}`}>
 
-      <label className="text-[13px] text-[#8C9BAB] mb-1.5 block">
+      <label className="text-[12px] text-[#8C9BAB] mb-1 block">
         {label}
       </label>
 
@@ -39,25 +44,23 @@ function SelectField({
       {/* Dropdown Menu */}
       {open && (
         <div className="absolute left-0 top-[56px] w-full bg-[#2C333A] border border-[#2C333A] rounded-lg shadow-2xl overflow-hidden z-50 py-1 max-h-48 overflow-y-auto">
-          {options.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => {
-                onChange(option);
-                setOpen(false);
-              }}
-              className={`w-full text-left px-3 py-2 text-[13px] transition hover:bg-[#3B444C]
-              ${
-                value === option
-                  ? "bg-[#3B444C] text-[#B6C2CF]"
-                  : "text-[#8C9BAB]"
-              }`}
-            >
-              {option}
-            </button>
-
-          ))}
+          {options.map((option, idx) => {
+            const id = typeof option === "string" ? option : option.id;
+            const name = typeof option === "string" ? option : option.name;
+            return (
+              <button
+                key={id + idx}
+                type="button"
+                onClick={() => {
+                  onChange(id);
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-[13px] transition hover:bg-[#3B444C] ${value === name ? "bg-[#3B444C] text-[#B6C2CF]" : "text-[#8C9BAB]"}`}
+              >
+                {name}
+              </button>
+            );
+          })}
 
         </div>
       )}

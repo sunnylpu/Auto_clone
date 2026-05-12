@@ -40,7 +40,7 @@ function computeExpiry(opt: string): string {
 function App() {
   const [t, setT] = useState<any>(null);
   const [ctx, setCtx] = useState<Context>("board");
-  const [view, setView] = useState<"form" | "rules" | "account">("form");
+  const [view, setView] = useState<"form" | "rules" | "account" | "cardback">("form");
   const [member, setMember] = useState<{ fullName?: string; username?: string; avatarUrl?: string } | null>(null);
   const [cards, setCards] = useState<TrelloCard[]>([]);
   const [lists, setLists] = useState<TrelloList[]>([]);
@@ -49,7 +49,7 @@ function App() {
   const [cardQuery, setCardQuery] = useState("");
   const [cardMenuOpen, setCardMenuOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState("");
-  const [targetListName, setTargetListName] = useState("");
+  const [targetListId, setTargetListId] = useState("");
   const [repeat, setRepeat] = useState("Weekly");
   const [weekday, setWeekday] = useState("Monday");
   const [dayOfMonth, setDayOfMonth] = useState("1");
@@ -94,11 +94,11 @@ function App() {
         const curList = cl;
 
         // Detect context: URL param > arg > infer from data
-        let context: Context = "board";
-        if (urlCtx === "card" || urlCtx === "list" || urlCtx === "board") {
-          context = urlCtx;
+        let context: Context | "cardback" = "board";
+        if (urlCtx === "card" || urlCtx === "list" || urlCtx === "board" || urlCtx === "cardback") {
+          context = urlCtx as Context | "cardback";
         } else if (ctxArg === "card" || ctxArg === "list" || ctxArg === "board") {
-          context = ctxArg;
+          context = ctxArg as Context;
         } else if (curCard?.id && curCard?.name) {
           context = "card";
         } else if (curList?.id && curList?.name) {
@@ -106,7 +106,14 @@ function App() {
         }
         
         if (!cancelled) {
-          setCtx(context);
+          if (context === "cardback") {
+            setCtx("card"); // Keep as card so other things don't break
+            setView("cardback"); // But view is cardback
+            const urlCardId = new URLSearchParams(window.location.search).get("cardId");
+            if (urlCardId) setSelectedCardId(urlCardId);
+          } else {
+            setCtx(context as Context);
+          }
         }
         if (!mem?.username || !bLists?.length || !bCards?.length) {
           try {
@@ -149,19 +156,18 @@ function App() {
         setCards(normCards);
 
         // Auto-select based on context
-        if (context === "card" && curCard?.id) {
-          setSelectedCardId(curCard.id);
+        if ((context === "card" || context === "cardback") && curCard?.id) {
+          if (!selectedCardId) setSelectedCardId(curCard.id);
           setCardQuery(curCard.name);
           setSelectedListId(curCard.idList ?? "");
-          const ln = normLists.find((l: TrelloList) => l.id === curCard.idList)?.name;
-          if (ln) setTargetListName(ln);
+          const ln = normLists.find((l: TrelloList) => l.id === curCard.idList)?.id;
+          if (ln) setTargetListId(ln);
         } else if (context === "list" && curList?.id) {
           setSelectedListId(curList.id);
-          const ln = normLists.find((l: TrelloList) => l.id === curList.id)?.name;
-          if (ln) setTargetListName(ln);
+          setTargetListId(curList.id);
         } else if (normLists.length) {
           setSelectedListId(normLists[0].id);
-          setTargetListName(normLists[0].name);
+          setTargetListId(normLists[0].id);
         }
       } catch (err: any) { 
         if (!cancelled) { 
@@ -212,7 +218,7 @@ function App() {
     if (!q) return cardsInList.slice(0, 40);
     return cardsInList.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 40);
   }, [cardsInList, cardQuery]);
-  const targetList = useMemo(() => lists.find((l) => l.name === targetListName) ?? null, [lists, targetListName]);
+  const targetList = useMemo(() => lists.find((l) => l.id === targetListId) ?? null, [lists, targetListId]);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 4000); }
   async function persistRules(next: CloneRule[]) { setRules(next); if (t) await t.set("board", "shared", RULES_KEY, next).catch(() => {}); }
@@ -253,29 +259,31 @@ function App() {
   function expiryLabel(r: CloneRule) { return r.expiry === "never" ? "No expiry" : `Expires ${new Date(r.expiry).toLocaleDateString()}`; }
 
   return (
-    <div className="p-4 bg-[#2b2c2f] min-h-screen text-[#B6C2CF] w-full font-sans flex flex-col relative overflow-x-hidden">
+    <div className={`p-4 bg-[#2b2c2f] text-[#B6C2CF] w-full font-sans flex flex-col relative overflow-x-hidden ${view === "cardback" ? "" : "min-h-screen"}`}>
       {toast && <div className="fixed top-2 left-2 right-2 z-[999] bg-[#22272B] border border-[#3B444C] text-[#B6C2CF] text-[13px] px-4 py-2 rounded-xl shadow-2xl animate-pulse text-center">{toast}</div>}
 
-      <div className="flex items-center justify-between mb-5 relative">
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => { setView(view === "account" ? "form" : "account"); setCardMenuOpen(false); }} className="h-8 pl-1 pr-3 rounded-full border border-[#2C333A] bg-[#2C333A] hover:bg-[#3B444C] transition flex items-center gap-2" aria-label="Account">
-            <div className="h-6 w-6 rounded-full overflow-hidden bg-[#22272b] grid place-items-center shrink-0">
-              {member?.avatarUrl ? <img src={member.avatarUrl} alt="User" className="h-full w-full object-cover" /> : <User size={14} className="text-[#8C9BAB]" />}
-            </div>
-            <span className="text-[12px] text-[#B6C2CF] font-medium truncate max-w-[100px]">{member?.fullName?.split(" ")[0] ?? member?.username ?? "User"}</span>
-          </button>
-        </div>
+      {view !== "cardback" && (
+        <div className="flex items-center justify-between mb-5 relative">
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => { setView(view === "account" ? "form" : "account"); setCardMenuOpen(false); }} className="h-8 pl-1 pr-3 rounded-full border border-[#2C333A] bg-[#2C333A] hover:bg-[#3B444C] transition flex items-center gap-2" aria-label="Account">
+              <div className="h-6 w-6 rounded-full overflow-hidden bg-[#22272b] grid place-items-center shrink-0">
+                {member?.avatarUrl ? <img src={member.avatarUrl} alt="User" className="h-full w-full object-cover" /> : <User size={14} className="text-[#8C9BAB]" />}
+              </div>
+              <span className="text-[12px] text-[#B6C2CF] font-medium truncate max-w-[100px]">{member?.fullName?.split(" ")[0] ?? member?.username ?? "User"}</span>
+            </button>
+          </div>
 
-        {view !== "form" ? (
-          <button type="button" onClick={() => setView("form")} className="p-1 -mr-1 text-[#8C9BAB] hover:text-[#B6C2CF] transition" aria-label="Back">
-            <ChevronLeft size={22} />
-          </button>
-        ) : (
-          <button type="button" onClick={() => { if (t) t.closePopup(); }} className="p-1 -mr-1 text-[#8C9BAB] hover:text-[#B6C2CF] transition" aria-label="Close">
-            <X size={20} />
-          </button>
-        )}
-      </div>
+          {view !== "form" ? (
+            <button type="button" onClick={() => setView("form")} className="p-1 -mr-1 text-[#8C9BAB] hover:text-[#B6C2CF] transition" aria-label="Back">
+              <ChevronLeft size={22} />
+            </button>
+          ) : (
+            <button type="button" onClick={() => { if (t) t.closePopup(); }} className="p-1 -mr-1 text-[#8C9BAB] hover:text-[#B6C2CF] transition" aria-label="Close">
+              <X size={20} />
+            </button>
+          )}
+        </div>
+      )}
 
       {view === "account" && (
         <div className="mt-1">
@@ -353,8 +361,8 @@ function App() {
                   <SelectField
                     label="Select a list"
                     value={lists.find((l) => l.id === selectedListId)?.name || "Select list"}
-                    options={lists.map((l) => l.name)}
-                    onChange={(name) => { const li = lists.find((l) => l.name === name); if (li) { setSelectedListId(li.id); setTargetListName(name); setSelectedCardId(""); setCardQuery(""); } }}
+                    options={lists}
+                    onChange={(id) => { const li = lists.find((l) => l.id === id); if (li) { setSelectedListId(li.id); setTargetListId(li.id); setSelectedCardId(""); setCardQuery(""); } }}
                   />
                   <div className="text-[10px] text-red-400 mt-1">Debug Lists: {lists.length} | Context: {ctx} {debugError && `| Err: ${debugError}`} <br/> Data: {debugData}</div>
                 </>
@@ -384,7 +392,7 @@ function App() {
                       {filteredCards.length === 0 ? <div className="px-4 py-3 text-[13px] text-[#8C9BAB]">{selectedListId ? "No cards in this list" : "No cards found"}</div> : (
                         filteredCards.map((c) => (
                           <button key={c.id} type="button"
-                            onClick={() => { setSelectedCardId(c.id); setCardQuery(c.name); setCardMenuOpen(false); const ln = listNameById.get(c.idList); if (ln) setTargetListName(ln); }}
+                            onClick={() => { setSelectedCardId(c.id); setCardQuery(c.name); setCardMenuOpen(false); setTargetListId(c.idList); }}
                             className={`w-full text-left px-4 py-2.5 transition hover:bg-[#3B444C] ${c.id === selectedCardId ? "bg-zinc-700/30" : ""}`}>
                             <div className="text-[14px] text-[#B6C2CF] truncate">{c.name}</div>
                             <div className="text-[12px] text-[#8C9BAB] truncate mt-0.5">{listNameById.get(c.idList) ?? ""}</div>
@@ -435,7 +443,7 @@ function App() {
               </div>
 
               {(ctx === "board" || ctx === "list") && (
-                <SelectField label="List" value={targetListName || "Select list"} options={lists.map((l) => l.name)} onChange={setTargetListName} />
+                <SelectField label="List" value={lists.find(l => l.id === targetListId)?.name || "Select list"} options={lists} onChange={setTargetListId} />
               )}
 
               <div className="flex justify-end mt-2">
@@ -445,6 +453,19 @@ function App() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {view === "cardback" && (
+        <div className="flex items-center justify-between bg-[#22272b] border border-[#3B444C] rounded-lg p-3">
+          <div>
+            <div className="text-[11px] font-medium text-[#738496] uppercase tracking-widest mb-1">Next Repeat</div>
+            <div className="text-[14px] font-medium text-[#B6C2CF]">
+              {rules.find(r => r.srcId === selectedCardId)?.repeat === "Daily" && `Daily at ${rules.find(r => r.srcId === selectedCardId)?.time}`}
+              {rules.find(r => r.srcId === selectedCardId)?.repeat === "Weekly" && `Every ${rules.find(r => r.srcId === selectedCardId)?.weekday} at ${rules.find(r => r.srcId === selectedCardId)?.time}`}
+              {rules.find(r => r.srcId === selectedCardId)?.repeat === "Monthly" && `Monthly on day ${rules.find(r => r.srcId === selectedCardId)?.dayOfMonth} at ${rules.find(r => r.srcId === selectedCardId)?.time}`}
+            </div>
+          </div>
         </div>
       )}
     </div>
