@@ -9,10 +9,10 @@ var safe = function (promise, fallback) {
 function openPopup(t, context) {
   return Promise.all([
     safe(t.member("all"), null),
-    safe(t.lists("id", "name"), []),
-    safe(t.cards("id", "name", "desc", "idList", "idMembers", "idLabels"), []),
-    safe(t.card("id", "name", "desc", "idList", "idMembers", "idLabels"), null),
-    safe(t.list("id", "name"), null),
+    safe(t.lists("all"), []),
+    safe(t.cards("all"), []),
+    safe(t.card("all"), null),
+    safe(t.list("all"), null),
   ]).then(function (results) {
     var member = results[0];
     var lists = results[1];

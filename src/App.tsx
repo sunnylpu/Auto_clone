@@ -61,9 +61,11 @@ function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [needsAuth, setNeedsAuth] = useState(false);
   const [debugError, setDebugError] = useState<string>("");
+  const [debugData, setDebugData] = useState<string>("");
+  const TRELLO_APP_KEY = "e533ed095b0c07ac12a6f8d2aef8a3dd";
 
 
-  useEffect(() => { let a = 0; const id = setInterval(() => { a++; try { const c = window.TrelloPowerUp?.iframe?.(); if (c) { setT(c); clearInterval(id); } } catch {} if (a >= 30) clearInterval(id); }, 120); return () => clearInterval(id); }, []);
+  useEffect(() => { let a = 0; const id = setInterval(() => { a++; try { const c = window.TrelloPowerUp?.iframe?.({ appKey: TRELLO_APP_KEY, appName: 'Auto Clone' }); if (c) { setT(c); clearInterval(id); } } catch {} if (a >= 30) clearInterval(id); }, 120); return () => clearInterval(id); }, []);
   useEffect(() => { if (!t?.render || !t?.sizeTo) return; try { t.render(() => t.sizeTo("#root").catch(() => {})); } catch {} }, [t]);
   useEffect(() => { if (!t?.sizeTo) return; const id = requestAnimationFrame(() => t.sizeTo("#root").catch(() => {})); return () => cancelAnimationFrame(id); }, [t, cardMenuOpen, view, cards.length, rules.length, selectedListId, ctx]);
 
@@ -104,8 +106,8 @@ function App() {
         if (!mem || !bLists?.length || !bCards?.length) {
           const [m, l, c] = await Promise.all([
             t.member("all").catch((e: any) => { setDebugError(prev => prev + " memErr:" + e?.message); return null; }), 
-            t.lists("id", "name").catch((e: any) => { setDebugError(prev => prev + " listErr:" + e?.message); return []; }), 
-            t.cards("id", "name", "desc", "idList", "idMembers", "idLabels").catch((e: any) => { setDebugError(prev => prev + " cardErr:" + e?.message); return []; })
+            t.lists("all").catch((e: any) => { setDebugError(prev => prev + " listErr:" + e?.message); return []; }), 
+            t.cards("all").catch((e: any) => { setDebugError(prev => prev + " cardErr:" + e?.message); return []; })
           ]);
           mem = mem ?? m; bLists = bLists?.length ? bLists : l; bCards = bCards?.length ? bCards : c;
         }
@@ -127,6 +129,8 @@ function App() {
               bid ? api.get(`boards/${bid}/lists`, { fields: "id,name", filter: "open" }).catch((e: any) => { setDebugError(prev => prev + " apiList:" + e?.message); return []; }) : [], 
               bid ? api.get(`boards/${bid}/cards`, { fields: "id,name,desc,idList,idMembers,idLabels", filter: "open" }).catch((e: any) => { setDebugError(prev => prev + " apiCard:" + e?.message); return []; }) : []
             ]);
+            
+            setDebugData(`ls_len:${Array.isArray(ls)?ls.length:typeof ls} bid:${bid}`);
             
             mem = { ...(mem ?? {}), ...(me ?? {}) }; 
             if (!bLists?.length && Array.isArray(ls)) bLists = ls; 
@@ -324,7 +328,7 @@ function App() {
                     options={lists.map((l) => l.name)}
                     onChange={(name) => { const li = lists.find((l) => l.name === name); if (li) { setSelectedListId(li.id); setTargetListName(name); setSelectedCardId(""); setCardQuery(""); } }}
                   />
-                  <div className="text-[10px] text-red-400 mt-1">Debug Lists: {lists.length} | Context: {ctx} {debugError && `| Err: ${debugError}`}</div>
+                  <div className="text-[10px] text-red-400 mt-1">Debug Lists: {lists.length} | Context: {ctx} {debugError && `| Err: ${debugError}`} <br/> Data: {debugData}</div>
                 </>
               )}
 
