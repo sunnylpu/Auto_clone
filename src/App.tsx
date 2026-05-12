@@ -259,10 +259,7 @@ function App() {
   function expiryLabel(r: CloneRule) { return r.expiry === "never" ? "No expiry" : `Expires ${new Date(r.expiry).toLocaleDateString()}`; }
 
   return (
-    <div
-      className={`p-4 bg-[#2b2c2f] text-[#B6C2CF] font-sans flex flex-col relative overflow-x-hidden ${view === "cardback" ? "w-full" : "w-[372px] min-h-[560px] rounded-[28px] mx-auto shadow-2xl"}`}
-      style={view !== "cardback" ? { width: "372px", minHeight: "560px", borderRadius: "28px" } : undefined}
-    >
+    <div className={`p-4 bg-[#2b2c2f] text-[#B6C2CF] w-full font-sans flex flex-col relative overflow-x-hidden ${view === "cardback" ? "" : "min-h-screen"}`}>
       {toast && <div className="fixed top-2 left-2 right-2 z-[999] bg-[#22272B] border border-[#3B444C] text-[#B6C2CF] text-[13px] px-4 py-2 rounded-xl shadow-2xl animate-pulse text-center">{toast}</div>}
 
       {view !== "cardback" && (

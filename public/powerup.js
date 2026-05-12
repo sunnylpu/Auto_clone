@@ -9,7 +9,7 @@ var safe = function (promise, fallback) {
 function openPopup(t, context) {
   return t.popup({
     url: "./index.html?ctx=" + context + "&v=" + Date.now(),
-    height: 560,
+    height: 400,
     accentColor: "#2b2c2f",
     args: {
       context: context,
