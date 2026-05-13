@@ -394,7 +394,7 @@ function App() {
                     options={lists}
                     onChange={(id) => { const li = lists.find((l) => l.id === id); if (li) { setSelectedListId(li.id); setTargetListId(li.id); setSelectedCardId(""); setCardQuery(""); } }}
                   />
-                  <div className="text-[10px] text-red-400 mt-1">Debug Lists: {lists.length} | Context: {ctx} {debugError && `| Err: ${debugError}`} <br/> Data: {debugData}</div>
+                  {/* <div className="text-[10px] text-red-400 mt-1">Debug Lists: {lists.length} | Context: {ctx} {debugError && `| Err: ${debugError}`} <br/> Data: {debugData}</div> */}
                 </>
               )}
 
