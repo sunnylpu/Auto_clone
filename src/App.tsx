@@ -62,6 +62,10 @@ function App() {
   const [needsAuth, setNeedsAuth] = useState(false);
   const [debugError, setDebugError] = useState<string>("");
   const [debugData, setDebugData] = useState<string>("");
+  
+  // Prevent TS build errors while debug UI is commented out
+  void debugError;
+  void debugData;
   const TRELLO_APP_KEY = "e533ed095b0c07ac12a6f8d2aef8a3dd";
 
 

@@ -21,7 +21,7 @@ window.TrelloPowerUp.initialize({
   "board-buttons": function (t) {
     return [{
       icon: t.signUrl('./logo.png'),
-      text: "",
+      text: "Auto Clone",
       callback: function (t) { return openPopup(t, "board"); },
     }];
   },
